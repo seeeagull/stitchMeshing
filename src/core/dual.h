@@ -19,7 +19,7 @@
 #ifndef __Single_Strip_Mesh_Simplification__Dual__
 #define __Single_Strip_Mesh_Simplification__Dual__
 
-#define USE_GUROBI
+// #define USE_GUROBI
 
 #include <iostream>
 #include <vector>

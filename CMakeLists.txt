@@ -107,11 +107,11 @@ include_directories(
   # Resource file
   ${CMAKE_CURRENT_BINARY_DIR}
   # Gurobi
-  "D:/Libs/gurobi752/win64/include"
+  "/home/yangkai/Downloads/gurobi11.0.0_linux64/gurobi1100/linux64/include"
 )
 
 link_directories(
-	"D:/Libs/gurobi752/win64/lib"
+	"/home/yangkai/Downloads/gurobi11.0.0_linux64/gurobi1100/linux64/lib"
 )
 
 # Run bin2c on resource files
@@ -144,11 +144,15 @@ elseif(WIN32)
   set(EXTRA_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/resources/im.rc")
 endif()
 
+# SCIP
+find_package(SCIP REQUIRED)
+include_directories(${SCIP_INCLUDE_DIRS})
+
 add_library(stitch-meshing_lib
 	src/core/cyPoint.h
 	src/core/dual.cpp src/core/dual.h
 	src/core/HE_Face.cpp src/core/HE_Face.h
-	src/core/HE_Halfedge.cpp src/core/HE_Halfedge.h
+	src/core/HE_HalfEdge.cpp src/core/HE_HalfEdge.h
 	src/core/HE_Polyhedron.cpp src/core/HE_Polyhedron.h
 	src/core/HE_Vertex.cpp src/core/HE_Vertex.h
 	src/core/mesh_io.cpp
@@ -182,7 +186,7 @@ add_executable(stitch-meshing MACOSX_BUNDLE
   src/main.cpp
 )
 
-target_link_libraries(stitch-meshing stitch-meshing_lib tbb_static nanogui gurobi75 gurobi_c++mt2015 gurobi_c++mtd2015 ${NANOGUI_EXTRA_LIBS})
+target_link_libraries(stitch-meshing stitch-meshing_lib tbb_static nanogui gurobi110 ${NANOGUI_EXTRA_LIBS} ${SCIP_LIBRARIES})
 
 set_target_properties(stitch-meshing PROPERTIES OUTPUT_NAME "stitch-meshing")
 

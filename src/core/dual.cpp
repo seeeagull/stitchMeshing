@@ -16,7 +16,11 @@
 *   along with this program.  If not, see <http://www.gnu.org/licenses/>.        *
 *********************************************************************************/
 
-#include "Dual.h"
+#include <iostream>
+#include <sstream>
+#include <scip/scip.h>
+#include <scip/scipdefplugins.h>
+#include "dual.h"
 
 DualGraph::DualGraph(HE_Polyhedron* ply) {
     _poly = ply;
@@ -1555,6 +1559,198 @@ void DualGraph::gurobiSolver(std::string pFilename)
 	catch (...) {
 		std::cout << "Exception during optimization" << std::endl;
 	}
+#else
+	std::cout << "~~~~~no Gorubi, using SCIP~~~~~" << std::endl;
+	SCIP* scip = nullptr;
+	SCIPcreate(&scip);
+	SCIPincludeDefaultPlugins(scip);
+	SCIPcreateProbBasic(scip, "labelMesh");
+	SCIPsetObjsense(scip, SCIP_OBJSENSE_MINIMIZE);
+
+	int numVars = 0;
+
+	std::cout << "Face number: " << _poly->numFaces() << std::endl;
+	std::cout << "Halfedge number: " << _poly->numHalfEdges() << std::endl;
+
+	for (int fi = 0; fi < _poly->numFaces(); fi++)
+	{
+		HE_Face* f = _poly->face(fi);
+
+		if (f->hole())  continue;
+
+		_idxOffsets.push_back(numVars);
+		numVars += f->NumHalfEdge();
+	}
+	std::cout << "Variable number: " << numVars << std::endl;
+
+    std::vector< SCIP_VAR* > vars{};
+	vars.resize(numVars+1);
+    std::ostringstream namebuf;
+
+    for(int i = 0; i < numVars; ++i ) {
+        SCIP_VAR* var = nullptr;
+        namebuf.str("");
+        namebuf << "x" << i;
+        SCIPcreateVarBasic(scip, &var, namebuf.str().c_str(), 0.0, 1.0, 0.0, SCIP_VARTYPE_BINARY);
+        SCIPaddVar(scip, var);
+        vars[i] = var;
+    }
+    SCIP_VAR* var = nullptr;
+    namebuf.str("qmatrixvar");
+    SCIPcreateVarBasic(scip, &var, namebuf.str().c_str(), -SCIPinfinity(scip), SCIPinfinity(scip), 1.0, SCIP_VARTYPE_CONTINUOUS);
+    SCIPaddVar(scip, var);
+    vars[numVars] = var;
+
+    std::vector< SCIP_CONS* > constraints{};
+	for (int fi = 0; fi < _poly->numFaces(); fi++)
+	{
+		HE_Face* f = _poly->face(fi);
+		if (f->hole()) continue;
+
+		int offset = _idxOffsets[fi];
+		int outdegree = f->NumHalfEdge();
+		if (outdegree == 3) {
+			// 1 <= fi0 + fi1 + fi2 <= 1
+			SCIP_CONS* cons = nullptr;
+			namebuf.str("c");
+			namebuf << std::to_string(fi);
+			SCIPcreateConsBasicLinear(scip, &cons, namebuf.str().c_str(), 0, nullptr, nullptr, 1, 2);
+			SCIPaddCoefLinear(scip, cons, vars[offset + 0], 1);
+			SCIPaddCoefLinear(scip, cons, vars[offset + 1], 1);
+			SCIPaddCoefLinear(scip, cons, vars[offset + 2], 1);
+			SCIPaddCons(scip, cons);
+			constraints.push_back(cons);
+		} else if (outdegree == 4) {
+			// fi0 = fi2
+			// fi1 = fi3
+			// fi0 + fi1 = 1
+			SCIP_CONS* cons[2];
+			cons[0] = nullptr;
+			namebuf.str("c");
+			namebuf << std::to_string(fi) << '0';
+			SCIPcreateConsBasicLinear(scip, &cons[0], namebuf.str().c_str(), 0, nullptr, nullptr, 0, 0);
+			SCIPaddCoefLinear(scip, cons[0], vars[offset + 0], 1);
+			SCIPaddCoefLinear(scip, cons[0], vars[offset + 2], -1);
+			SCIPaddCons(scip, cons[0]);
+			constraints.push_back(cons[0]);
+			cons[1] = nullptr;
+			namebuf.str("c");
+			namebuf << std::to_string(fi) << '1';
+			SCIPcreateConsBasicLinear(scip, &cons[1], namebuf.str().c_str(), 0, nullptr, nullptr, 0, 0);
+			SCIPaddCoefLinear(scip, cons[1], vars[offset + 1], 1);
+			SCIPaddCoefLinear(scip, cons[1], vars[offset + 3], -1);
+			SCIPaddCons(scip, cons[1]);
+			constraints.push_back(cons[1]);
+			cons[2] = nullptr;
+			namebuf.str("c");
+			namebuf << std::to_string(fi) << '2';
+			SCIPcreateConsBasicLinear(scip, &cons[2], namebuf.str().c_str(), 0, nullptr, nullptr, 1, 1);
+			SCIPaddCoefLinear(scip, cons[2], vars[offset + 0], 1);
+			SCIPaddCoefLinear(scip, cons[2], vars[offset + 1], 1);
+			SCIPaddCons(scip, cons[2]);
+			constraints.push_back(cons[2]);
+		} else {
+			std::cout << "ERROR: shouldn't be here!\n";
+		}
+	}
+
+	std::vector< SCIP_EXPR* > expressions{};
+	SCIP_CONS* cons_qmatrix = nullptr;
+	namebuf.str("qmatrix");
+	SCIPcreateConsBasicQuadraticNonlinear(scip, &cons_qmatrix, namebuf.str().c_str(), 0, NULL, NULL, 0, NULL, NULL, NULL, -SCIPinfinity(scip), 0);
+	SCIP_EXPR* expr = nullptr;
+	SCIP_EXPR* init_expr = nullptr;
+	SCIP_Real minusone = -1.0;
+	SCIPcreateExprVar(scip, &init_expr, vars[numVars], NULL, NULL);
+	SCIPcreateExprSum(scip, &expr, 1, &init_expr, &minusone, 0.0, NULL, NULL);
+	expressions.push_back(init_expr);
+	for (int i = 0; i < numEdges(); ++i)
+	{
+		DualEdge tmpde = _dualedges[i];
+		int f0 = tmpde._fi[0], f1 = tmpde._fi[1];
+		HE_HalfEdge* he0 = _poly->halfedge(tmpde._hei[0]);
+		HE_HalfEdge* he1 = _poly->halfedge(tmpde._hei[1]);
+		int idx0 = _poly->face(f0)->HalfEdgeIdx(he0);
+		int idx1 = _poly->face(f1)->HalfEdgeIdx(he1);
+		if (_poly->face(f0)->hole() || _poly->face(f1)->hole()) continue;
+
+		int idvar0 = _idxOffsets[f0] + idx0;
+		int idvar1 = _idxOffsets[f1] + idx1;
+		SCIP_EXPR* exprs[7];
+		SCIPcreateExprVar(scip, &exprs[0], vars[idvar0], NULL, NULL);
+		SCIPduplicateExpr(scip, exprs[0], &exprs[1], NULL, NULL, NULL, NULL);
+		SCIPcreateExprVar(scip, &exprs[2], vars[idvar1], NULL, NULL);
+		SCIPduplicateExpr(scip, exprs[2], &exprs[3], NULL, NULL, NULL, NULL);
+		SCIPcreateExprProduct(scip, &exprs[4], 2, &exprs[0], 1, NULL, NULL);
+		SCIPcreateExprProduct(scip, &exprs[5], 2, &exprs[1], -2, NULL, NULL);
+		SCIPcreateExprProduct(scip, &exprs[6], 2, &exprs[2], 1, NULL, NULL);
+		SCIPappendExprSumExpr(scip, expr, exprs[4], 1);
+		SCIPappendExprSumExpr(scip, expr, exprs[5], 1);
+		SCIPappendExprSumExpr(scip, expr, exprs[6], 1);
+		expressions.push_back(exprs[6]);
+		expressions.push_back(exprs[5]);
+		expressions.push_back(exprs[4]);
+		expressions.push_back(exprs[3]);
+		expressions.push_back(exprs[2]);
+		expressions.push_back(exprs[1]);
+		expressions.push_back(exprs[0]);
+
+	}
+	expressions.push_back(expr);
+	SCIPaddExprNonlinear(scip, cons_qmatrix, expr, 1.0);
+	SCIPaddCons(scip, cons_qmatrix);
+	constraints.push_back(cons_qmatrix);
+
+	
+	SCIPsetIntParam(scip, "display/verblevel", 0);
+	SCIPsolve(scip);
+
+	SCIP_STATUS solutionstatus = SCIPgetStatus( scip );
+
+	if( solutionstatus == SCIP_STATUS_OPTIMAL ) {
+		SCIP_SOL* sol;
+		sol = SCIPgetBestSol( scip );
+		auto qmval = SCIPgetSolVal(scip, sol, vars[numVars]);
+		std::cout << "qmatrix min: " << qmval << std::endl;
+		std::ofstream uvfile;
+		std::string uv_config = pFilename + "_uv_config.txt";
+		uvfile.open(uv_config);
+		int fidx = 1;
+		std::vector<bool> result{};
+		for (int i = 0; i < numVars; i++)
+		{	
+			auto val = SCIPgetSolVal(scip, sol, vars[i]);
+			result.push_back(val > 0.5f);
+
+			if (val > 0.5f)
+				uvfile << int(1) << " ";
+			else 
+				uvfile << int(0) << " ";
+
+			if (i == (_idxOffsets[fidx] - 1)) 
+				fidx++;
+		}
+
+		uvfile.close();
+		_gurobiResultPool.push_back(result);
+	} else if( solutionstatus == SCIP_STATUS_INFEASIBLE ) {
+		std::cout << "Problem is infeasible." << std::endl;
+	} else {
+		std::cerr << "Something went wrong during the optimization." << std::endl;
+		exit(1);
+	}
+
+
+    for (auto &expr : expressions)
+      	SCIPreleaseExpr(scip, &expr);
+   	expressions.clear();
+   	for (int i = 0; i <= numVars; ++i )
+    	SCIPreleaseVar(scip, &vars[i]);
+   	vars.clear();
+   	for ( auto &constr : constraints )
+      	SCIPreleaseCons(scip, &constr);
+   	constraints.clear();
+   	SCIPfree(&scip);
 #endif
 }
 
@@ -2359,6 +2555,184 @@ void DualGraph::waleMismatchSolver()
 	catch (...) {
 		std::cout << "Exception during optimization" << std::endl;
 	}
+#else
+	std::cout << "~~~~~no Gorubi, using SCIP~~~~~" << std::endl;
+	
+	SCIP* scip = nullptr;
+	SCIPcreate(&scip);
+	SCIPincludeDefaultPlugins(scip);
+	SCIPcreateProbBasic(scip, "waleMatch");
+	SCIPsetObjsense(scip, SCIP_OBJSENSE_MINIMIZE);
+
+	int numVars = 2 * (int)_groupnodes.size();
+	std::cout << "Vars number: " << numVars << std::endl;
+
+    std::vector< SCIP_VAR* > vars{};
+	vars.resize(numVars+1);
+    std::ostringstream namebuf;
+
+    for(int i = 0; i < numVars; ++i )
+	{
+        SCIP_VAR* var = nullptr;
+        namebuf.str("");
+        namebuf << "x" << i;
+        SCIPcreateVarBasic(scip, &var, namebuf.str().c_str(), 0.0, 1.0, 0.0, SCIP_VARTYPE_BINARY);
+        SCIPaddVar(scip, var);
+        vars[i] = var;
+    }
+    SCIP_VAR* var = nullptr;
+    namebuf.str("qmatrixvar");
+    SCIPcreateVarBasic(scip, &var, namebuf.str().c_str(), -SCIPinfinity(scip), SCIPinfinity(scip), 1.0, SCIP_VARTYPE_CONTINUOUS);
+    SCIPaddVar(scip, var);
+    vars[numVars] = var;
+
+    std::vector< SCIP_CONS* > constraints{};
+	for (int gi = 0; gi < (int)_groupnodes.size(); ++gi)
+	{
+		// li0 + li1 = 1
+		SCIP_CONS* cons = nullptr;
+		namebuf.str("c");
+		namebuf << std::to_string(gi);
+		SCIPcreateConsBasicLinear(scip, &cons, namebuf.str().c_str(), 0, nullptr, nullptr, 1, 1);
+		SCIPaddCoefLinear(scip, cons, vars[gi << 1], 1);
+		SCIPaddCoefLinear(scip, cons, vars[gi << 1 | 1], 1);
+		SCIPaddCons(scip, cons);
+		constraints.push_back(cons);
+	}
+
+	std::vector< SCIP_EXPR* > expressions{};
+	SCIP_CONS* cons_qmatrix = nullptr;
+	namebuf.str("qmatrix");
+	SCIPcreateConsBasicQuadraticNonlinear(scip, &cons_qmatrix, namebuf.str().c_str(), 0, NULL, NULL, 0, NULL, NULL, NULL, -SCIPinfinity(scip), 0);
+	SCIP_EXPR* expr = nullptr;
+	SCIP_EXPR* init_expr = nullptr;
+	SCIP_Real minusone = -1.0;
+	SCIPcreateExprVar(scip, &init_expr, vars[numVars], NULL, NULL);
+	SCIPcreateExprSum(scip, &expr, 1, &init_expr, &minusone, 0.0, NULL, NULL);
+	expressions.push_back(init_expr);
+	double weight_sum = 0;
+	for (int i = 0; i < (int)_groupedges.size(); ++i)
+	{
+		int idvar0, idvar1;
+		if (_groupedges[i]._eType[0] == EG_TOP) idvar0 = _groupedges[i]._fi[0] * 2;
+		else  idvar0 = _groupedges[i]._fi[0] * 2 + 1;
+		if (_groupedges[i]._eType[1] == EG_TOP) idvar1 = _groupedges[i]._fi[1] * 2;
+		else  idvar1 = _groupedges[i]._fi[1] * 2 + 1;
+		SCIP_Real weight = _groupedges[i]._weight;
+		weight_sum += weight;
+		SCIP_EXPR* exprs[7];
+		SCIPcreateExprVar(scip, &exprs[0], vars[idvar0], NULL, NULL);
+		SCIPduplicateExpr(scip, exprs[0], &exprs[1], NULL, NULL, NULL, NULL);
+		SCIPcreateExprVar(scip, &exprs[2], vars[idvar1], NULL, NULL);
+		SCIPduplicateExpr(scip, exprs[2], &exprs[3], NULL, NULL, NULL, NULL);
+		SCIPcreateExprProduct(scip, &exprs[4], 2, &exprs[0], -1 * weight, NULL, NULL);
+		SCIPcreateExprProduct(scip, &exprs[5], 2, &exprs[1], 2 * weight, NULL, NULL);
+		SCIPcreateExprProduct(scip, &exprs[6], 2, &exprs[2], -1 * weight, NULL, NULL);
+		SCIPappendExprSumExpr(scip, expr, exprs[4], 1);
+		SCIPappendExprSumExpr(scip, expr, exprs[5], 1);
+		SCIPappendExprSumExpr(scip, expr, exprs[6], 1);
+		expressions.push_back(exprs[6]);
+		expressions.push_back(exprs[5]);
+		expressions.push_back(exprs[4]);
+		expressions.push_back(exprs[3]);
+		expressions.push_back(exprs[2]);
+		expressions.push_back(exprs[1]);
+		expressions.push_back(exprs[0]);
+	}
+	expressions.push_back(expr);
+	SCIPaddExprNonlinear(scip, cons_qmatrix, expr, 1.0);
+	SCIPaddCons(scip, cons_qmatrix);
+	constraints.push_back(cons_qmatrix);
+
+	
+	SCIPsetIntParam(scip, "display/verblevel", 0);
+	SCIPsolve(scip);
+
+	SCIP_STATUS solutionstatus = SCIPgetStatus( scip );
+
+	if( solutionstatus == SCIP_STATUS_OPTIMAL ) {
+		SCIP_SOL* sol;
+		sol = SCIPgetBestSol( scip );
+
+		auto qmval = SCIPgetSolVal(scip, sol, vars[numVars]);
+		std::cout << "qmatrix min: " << qmval+weight_sum << std::endl;
+		for (int i = 0; i < numVars; i++)
+		{
+			auto val = SCIPgetSolVal(scip, sol, vars[i]);
+			std::cout << (val > 0.5f) << " ";
+
+			if (i % 2 == 0) {
+				if (val < 0.5f)
+					_groupnodes[i / 2]._needFlip = true;
+				else 
+					_groupnodes[i / 2]._needFlip = false;
+			}
+			if (i%2 == 1) 
+				std::cout << "| ";
+		}
+		std::cout << std::endl;
+
+		for (int i = 0; i < (int)_groupnodes.size(); i++)
+		{
+			if (_groupnodes[i]._needFlip) 
+			{
+				for (int fi = 0; fi < (int)_groupFaceIdx[i].size(); fi++)
+				{
+					HE_Face* f = _poly->face(_groupFaceIdx[i][fi]);
+					if (f->TestFlag(VEF_FLAG_QUAD))
+					{
+						f->edge(f->edge()->next());
+						f->edge(f->edge()->next());
+					}
+					else if (f->TestFlag(VEF_FLAG_INC)) 
+					{ 
+						f->ClearFlag(VEF_FLAG_INC);
+						f->SetFlag(VEF_FLAG_DEC);
+					}
+					else if (f->TestFlag(VEF_FLAG_DEC)) 
+					{ 
+						f->ClearFlag(VEF_FLAG_DEC);
+						f->SetFlag(VEF_FLAG_INC); 
+					}
+					else if (f->TestFlag(VEF_FLAG_SHORTROW_L)) 
+					{ 
+						f->ClearFlag(VEF_FLAG_SHORTROW_L);
+						f->edge(f->edge()->next());
+						f->SetFlag(VEF_FLAG_SHORTROW_R); 
+					}
+					else if (f->TestFlag(VEF_FLAG_SHORTROW_R)) 
+					{ 
+						f->ClearFlag(VEF_FLAG_SHORTROW_R);
+						f->edge(f->edge()->prev());
+						f->SetFlag(VEF_FLAG_SHORTROW_L); 
+					}
+				}
+			}
+		}
+	
+		for (int i = 0; i < (int)_groupnodes.size(); i++)
+		{
+			if (_groupnodes[i]._needFlip)
+				reverse(_groupFaceIdx[i].begin(), _groupFaceIdx[i].end());
+		}
+	} else if( solutionstatus == SCIP_STATUS_INFEASIBLE ) {
+		std::cout << "Problem is infeasible." << std::endl;
+	} else {
+		std::cerr << "Something went wrong during the optimization." << std::endl;
+		exit(1);
+	}
+
+
+    for (auto &expr : expressions)
+      	SCIPreleaseExpr(scip, &expr);
+   	expressions.clear();
+   	for (int i = 0; i <= numVars; ++i )
+    	SCIPreleaseVar(scip, &vars[i]);
+   	vars.clear();
+   	for ( auto &constr : constraints )
+      	SCIPreleaseCons(scip, &constr);
+   	constraints.clear();
+   	SCIPfree(&scip);
 #endif
 }
 
