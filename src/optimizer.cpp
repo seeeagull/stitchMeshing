@@ -1,7 +1,7 @@
 #include "optimizer.h"
 
 Optimizer::Optimizer(MultiResolutionHierarchy &mRes)
-	: mRes(mRes), mRunning(false), mOptimizeOrientations(false),
+	: mRes(mRes), mRunning(true), mOptimizeOrientations(false),
 	mOptimizePositions(false), mAlignment(true), mRandomization(true), mExtrinsic(true),
 	mHierarchy(true), mLevel(0), mLevelIterations(0), mMaxIterations(20) {
 	mThread = std::thread(&Optimizer::run, this);
@@ -24,12 +24,13 @@ void Optimizer::setOptimizePositions(bool value) {
 }
 
 void Optimizer::run() {
-	mRunning = true;
-
 	while (true) {
 		std::lock_guard<ordered_lock> lock(mRes.mutex());
 		while (mRunning && (mRes.levels() == 0 || (!mOptimizePositions && !mOptimizeOrientations)))
 			mCond.wait(mRes.mutex());
+
+		if (!mRunning)
+			break;
 
 		if (!mHierarchy)
 			mLevel = 0;
@@ -67,9 +68,6 @@ void Optimizer::run() {
 					mRes.prolongPositions(mLevel);
 			}
 		}
-
-		if (!mRunning)
-			break;
 	}
 
 	
