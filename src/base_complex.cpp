@@ -1,6 +1,7 @@
 #include "base_complex.h"
 
 
+namespace stitchMeshing {
 void base_complex::singularity_structure(Singularity &si, Mesh &mesh){
 	si.SVs.clear(); si.SEs.clear();
 
@@ -713,4 +714,5 @@ void base_complex::assign_color(Frame &frame)
 			frame.FHs[i].Color_ID = Color_id;
 		}
 	}
+}
 }

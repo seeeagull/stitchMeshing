@@ -3,6 +3,8 @@
 #include "common.h"
 #include <chrono>
 
+
+namespace stitchMeshing {
 template <typename TimeT = std::chrono::milliseconds> class Timer {
 public:
     Timer() {
@@ -37,3 +39,4 @@ public:
 private:
     std::chrono::system_clock::time_point start;
 };
+}

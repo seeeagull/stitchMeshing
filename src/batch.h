@@ -15,4 +15,9 @@
 
 #include "common.h"
 
-extern void batch_process(char *input, char *output, Float scale);
+namespace stitchMeshing {
+extern void batch_process(const std::string &input, const std::string &output,
+                          Float scale, bool flip,
+                          std::vector<std::vector<int>> &faces,
+                          std::vector<std::vector<float>> &verts);
+}

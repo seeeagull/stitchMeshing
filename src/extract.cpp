@@ -1,5 +1,7 @@
 ﻿#include "hierarchy.h"
 #include "positions.h"
+
+namespace stitchMeshing {
 //2D&3D========================================================================================================//
 std::priority_queue<tuple_E, std::vector<tuple_E>, LessThan> Es_reddash;
 std::vector<uint32_t> V_map;
@@ -902,21 +904,26 @@ bool MultiResolutionHierarchy::meshExtraction2D() {
 
 		times++;
 		if (times > 10) {
+
 			if (doublets) {
 
 				uint32_t Degenerate_edge = 1, Triangle = 1;
 				while (Degenerate_edge || Triangle) {
+					std::cout << "3@@ " << times << std::endl;
 					while (remove_doublets2D()) {
 						mF_flag.resize(F_tag.size()); fill(mF_flag.begin(), mF_flag.end(), true);
 						mFs2D = F_tag;
 						swap_data2D();
 					}
+					std::cout << "4@@ " << times << std::endl;
 
 					Degenerate_edge = 0;
 					Triangle = 0;
 
 					if (triangles) {
+						std::cout << "5@@ " << times << std::endl;
 						edge_tagging2D(ledges);
+						std::cout << "6@@ " << times << std::endl;
 						while (Es_reddash.size()) Es_reddash.pop();
 						for (uint32_t i = 0; i < mEs.size(); ++i) {
 							switch (get<4>(mEs[i]))
@@ -929,10 +936,12 @@ bool MultiResolutionHierarchy::meshExtraction2D() {
 							}
 							get<4>(mEs[i]) = Edge_tag::B;
 						}
+						std::cout << "7@@ " << times << std::endl;
 						bool entered = tagging_collapseTri(true);
 
+						std::cout << "8@@ " << times << std::endl;
 						swap_data2D();
-
+						std::cout << "9@@ " << times << std::endl;
 						if (entered) {
 							Degenerate_edge = 1;
 							Triangle = 1;
@@ -1930,4 +1939,5 @@ void MultiResolutionHierarchy::composit_edges_centernodes_triangles(std::vector<
 			Triangles(2, col_++) = Actual_Fs[i][(j + 1) % f_size];
 		}
 	}
+}
 }

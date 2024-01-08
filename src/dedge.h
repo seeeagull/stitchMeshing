@@ -18,6 +18,7 @@
 //static const uint32_t INVALID = (uint32_t) -1;
 
 
+namespace stitchMeshing {
 inline uint32_t dedge_prev_3(uint32_t e) { return (e % 3 == 0) ? e + 2 : e - 1; }
 inline uint32_t dedge_next_3(uint32_t e) { return (e % 3 == 2) ? e - 2 : e + 1; }
 inline uint32_t dedge_prev_4(uint32_t e) { return (e % 4 == 0) ? e + 3 : e - 1; }
@@ -29,3 +30,4 @@ inline uint32_t dedge_next(uint32_t e, uint32_t deg) { return (e % deg == deg - 
 extern void build_dedge(const MatrixXu &F, const MatrixXf &V, VectorXu &V2E,
                          VectorXu &E2E, VectorXb &boundary, VectorXb &nonManifold,
                          bool quiet = false);
+}

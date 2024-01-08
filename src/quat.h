@@ -3,6 +3,8 @@
 #include "common.h"
 #include "pcg32.h"
 
+
+namespace stitchMeshing {
 class Quaternion : public Eigen::Matrix<Float, 4, 1> {
 public:
     typedef Eigen::Matrix<Float, 4, 1> Base;
@@ -188,5 +190,4 @@ public:
         ).normalized();
     }
 };
-
-
+}

@@ -35,6 +35,8 @@
 #endif
 
 
+
+namespace stitchMeshing {
 class HE_Polyhedron;
 
 struct DualNode {
@@ -118,7 +120,7 @@ class DualGraph {
 public:
 	std::vector<MISMATCH_TYPE>		_mismatchTypes;
 	std::vector<int>				_idxOffsets;
-	std::vector<std::vector<bool>>	_gurobiResultPool;
+	std::vector<int>				_labelResult;
 	int								_nSolutions;
 	std::vector<std::vector<int>>	_groupFaceIdx;
 	std::vector<bool>				_isLoop;
@@ -147,10 +149,10 @@ public:
 	int numNodes() const	{ return int(_dualnodes.size()); }
 	int numEdges() const	{ return int(_dualedges.size()); }
 
-	void gurobiSolver(std::string pFilename);
-	void loadGurobiResult(std::string pFilename, bool pFlip);
+	void labelSolver();
+	void loadLabelResult(bool pFlip);
 
-	void gurobiSolverHori();
+	void labelSolverHori();
 
 	void cutUVMismatchQuad(std::vector<HE_Vertex>& pVerts, std::vector<std::vector<int> >& pFaces, std::vector<std::vector<bool>>& edgeFlags);
 
@@ -217,5 +219,6 @@ protected:
 
 	HE_Polyhedron *_poly;
 };
+}
 
 #endif 

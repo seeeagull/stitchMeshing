@@ -2,6 +2,8 @@
 #include "positions.h"
 #include "timer.h"
 #include"quadratic.h"
+
+namespace stitchMeshing {
 //3D===========================================================================================================//
 std::vector<std::vector<uint32_t>> mTs;
 
@@ -3152,4 +3154,5 @@ Float MultiResolutionHierarchy::compute_cost_edge3D(uint32_t v0, uint32_t v1) {
 		if (cost_i < min_cost) min_cost = cost_i;
 	}
 	return min_cost;
+}
 }

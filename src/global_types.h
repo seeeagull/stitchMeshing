@@ -22,6 +22,7 @@ typedef double Float;
 #define PAI 3.1415926
 
 
+namespace stitchMeshing {
 enum Feature_V_Type {
 	INTERIOR = -4,
 	CORNER,
@@ -246,3 +247,4 @@ struct Mesh
 	vector<Hybrid_F> Fs;
 	vector<Hybrid> Hs;
 };
+}

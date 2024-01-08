@@ -2,6 +2,7 @@
 
 #include <condition_variable>
 
+namespace stitchMeshing {
 class ordered_lock {
 public:
     ordered_lock() : next_ticket(0), counter(0) {}
@@ -21,4 +22,5 @@ protected:
     std::mutex               cvar_lock;
     unsigned int             next_ticket, counter;
 };
+}
 

@@ -1,5 +1,6 @@
 #include "optimizer.h"
 
+namespace stitchMeshing {
 Optimizer::Optimizer(MultiResolutionHierarchy &mRes)
 	: mRes(mRes), mRunning(true), mOptimizeOrientations(false),
 	mOptimizePositions(false), mAlignment(true), mRandomization(true), mExtrinsic(true),
@@ -103,4 +104,5 @@ void Optimizer::load(Serializer &serializer) {
 	serializer.pop();
 	mOptimizeOrientations = mOptimizePositions = false;
 	mLevelIterations = 0;
+}
 }

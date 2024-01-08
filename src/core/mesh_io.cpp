@@ -25,6 +25,7 @@
 #include "HE_Polyhedron.h"
 #include "util.h"
 
+namespace stitchMeshing {
 /// Here we implement the methods that read and save data from and to files,
 /// in different formats. Detection of the file format is also done automagically.
 
@@ -451,4 +452,5 @@ HE_Face* HE_Polyhedron::addFace(const std::vector<int>& corners)
 		edges[e]->next(edges[(e + 1) % ne]);
 
 	return f;
+}
 }

@@ -3,6 +3,7 @@
 #include "timer.h"
 #include "positions.h"
 
+namespace stitchMeshing {
 void MultiResolutionHierarchy::smoothOrientationsTri(uint32_t l, bool alignment, bool randomization, bool extrinsic) {
     const MatrixXf &N = mN[l];
     const SMatrix &L = mL[l];
@@ -311,4 +312,5 @@ void MultiResolutionHierarchy::detectOrientationSingularitiesTet() {
 
     S.conservativeResize(6, singularityCount);
     timer.endStage("Found " + std::to_string(singularityCount) + " singular faces");
+}
 }

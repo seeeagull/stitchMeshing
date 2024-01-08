@@ -15,6 +15,8 @@
 
 #include "aabb.h"
 #include <atomic>
+
+namespace stitchMeshing {
 /* BVH node in 32 bytes */
 struct BVHNode {
     union {
@@ -101,3 +103,4 @@ protected:
     const MatrixXu *mF;
     const MatrixXf *mV, *mN;
 };
+}

@@ -14,6 +14,8 @@
 
 #include "subdivide.h"
 #include "dedge.h"
+
+namespace stitchMeshing {
 static const uint32_t INVALID = -1;
 void subdivide(MatrixXu &F, MatrixXf &V, VectorXu &V2E, VectorXu &E2E,
                VectorXb &boundary, VectorXb &nonmanifold, Float maxLength,
@@ -171,4 +173,5 @@ void subdivide(MatrixXu &F, MatrixXf &V, VectorXu &V2E, VectorXu &E2E,
 
     cout << "done. (split " << nSplit << " edges, took "<< ", new V=" << V.cols()
          << ", F=" << F.cols() << ")" << endl;
+}
 }

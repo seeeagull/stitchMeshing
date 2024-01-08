@@ -71,20 +71,20 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "
 endif()
 
 # Build NanoGUI
-set(NANOGUI_BUILD_EXAMPLE OFF CACHE BOOL " " FORCE)
-set(NANOGUI_BUILD_SHARED  OFF CACHE BOOL " " FORCE)
-set(NANOGUI_BUILD_PYTHON  OFF CACHE BOOL " " FORCE)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ext/nanogui ext_build/nanogui)
-set_property(TARGET nanogui glfw glfw_objects bin2c PROPERTY FOLDER "dependencies")
+# set(NANOGUI_BUILD_EXAMPLE OFF CACHE BOOL " " FORCE)
+# set(NANOGUI_BUILD_SHARED  OFF CACHE BOOL " " FORCE)
+# set(NANOGUI_BUILD_PYTHON  OFF CACHE BOOL " " FORCE)
+# add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ext/nanogui ext_build/nanogui)
+# set_property(TARGET nanogui glfw glfw_objects bin2c PROPERTY FOLDER "dependencies")
 
 # Build TBB
-set(TBB_BUILD_STATIC ON CACHE BOOL " " FORCE)
-set(TBB_BUILD_SHARED OFF CACHE BOOL " " FORCE)
-set(TBB_BUILD_TBBMALLOC OFF CACHE BOOL " " FORCE)
-set(TBB_BUILD_TBBMALLOC_PROXY OFF CACHE BOOL " " FORCE)
-set(TBB_BUILD_TESTS OFF CACHE BOOL " " FORCE)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ext/tbb ext_build/tbb)
-set_property(TARGET tbb_static tbb_def_files PROPERTY FOLDER "dependencies")
+# set(TBB_BUILD_STATIC ON CACHE BOOL " " FORCE)
+# set(TBB_BUILD_SHARED OFF CACHE BOOL " " FORCE)
+# set(TBB_BUILD_TBBMALLOC OFF CACHE BOOL " " FORCE)
+# set(TBB_BUILD_TBBMALLOC_PROXY OFF CACHE BOOL " " FORCE)
+# set(TBB_BUILD_TESTS OFF CACHE BOOL " " FORCE)
+# add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ext/tbb ext_build/tbb)
+# set_property(TARGET tbb_static tbb_def_files PROPERTY FOLDER "dependencies")
 
 # Header file directories of dependency libraries
 include_directories(
@@ -104,15 +104,17 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/pcg32
   # RPLY mesh I/O library
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/rply
-  # Resource file
+  # Resources
+  ${CMAKE_CURRENT_SOURCE_DIR}/resources
+  # Source file
   ${CMAKE_CURRENT_BINARY_DIR}
-  # Gurobi
-  "/home/yangkai/Downloads/gurobi11.0.0_linux64/gurobi1100/linux64/include"
+  # # Gurobi
+  # "/gurobi1100/linux64/include"
 )
 
-link_directories(
-	"/home/yangkai/Downloads/gurobi11.0.0_linux64/gurobi1100/linux64/lib"
-)
+# link_directories(
+# 	"gurobi1100/linux64/lib"
+# )
 
 # Run bin2c on resource files
 set(PNG_FILES
@@ -156,7 +158,6 @@ add_library(stitch-meshing_lib
 	src/core/HE_Polyhedron.cpp src/core/HE_Polyhedron.h
 	src/core/HE_Vertex.cpp src/core/HE_Vertex.h
 	src/core/mesh_io.cpp
-	src/core/polyhedron_iterators.h
 	src/core/stitchmeshing.cpp
 	src/core/HE_Vertex.cpp src/core/HE_Vertex.h
 	src/core/util.cpp src/core/util.h
@@ -181,12 +182,18 @@ add_library(stitch-meshing_lib
   ext/rply/rply.c
   im_resources.cpp
 )
+add_library(StitchMeshingApi SHARED
+  api.h api.cpp
+)
+target_compile_definitions(StitchMeshingApi PRIVATE -DStitchMeshing_EXPORT)
 
 add_executable(stitch-meshing MACOSX_BUNDLE
   src/main.cpp
 )
 
-target_link_libraries(stitch-meshing stitch-meshing_lib tbb_static nanogui gurobi110 ${NANOGUI_EXTRA_LIBS} ${SCIP_LIBRARIES})
+# target_link_libraries(stitch-meshing stitch-meshing_lib tbb_static nanogui gurobi110 ${NANOGUI_EXTRA_LIBS} ${SCIP_LIBRARIES})
+target_link_libraries(stitch-meshing PRIVATE stitch-meshing_lib tbb_from_instant_meshes nanogui_from_instant_meshes ${SCIP_LIBRARIES})
+target_link_libraries(StitchMeshingApi PRIVATE stitch-meshing_lib tbb_from_instant_meshes nanogui_from_instant_meshes ${SCIP_LIBRARIES})
 
 set_target_properties(stitch-meshing PROPERTIES OUTPUT_NAME "stitch-meshing")
 

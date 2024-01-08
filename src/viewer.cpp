@@ -4,6 +4,8 @@
 #include "bvh.h"
 #include <nanogui/serializer/opengl.h>
 
+
+namespace stitchMeshing {
 Viewer::Viewer(std::string &filename, bool fullscreen)
     : Screen(Vector2i(1280, 960), "Stitch Meshing", true),
       mOptimizer(nullptr) {
@@ -1160,4 +1162,5 @@ void Viewer::computeCameraMatrices(Eigen::Matrix4f &model,
 
 	model = model * scale(Eigen::Vector3f::Constant(mCamera.zoom * mCamera.modelZoom));
 	model = model * translate(mCamera.modelTranslation);
+}
 }

@@ -2,6 +2,7 @@
 #include "positions.h"
 #include "timer.h"
 
+namespace stitchMeshing {
 void MultiResolutionHierarchy::smoothPositionsTri(uint32_t l, bool alignment, bool randomization, bool extrinsic) {
 	const SMatrix &L = mL[l];
 	const MatrixXf &V = mV[l], &N = mN[l], &Q = mQ[l];
@@ -328,4 +329,5 @@ void MultiResolutionHierarchy::detectPositionSingularitiesTet() {
 	);
 	S.conservativeResize(6, singularityCount);
 	timer.endStage("Found " + std::to_string(singularityCount) + " singular faces");
+}
 }

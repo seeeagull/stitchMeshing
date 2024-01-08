@@ -18,6 +18,7 @@
 
 #include "../hierarchy.h"
 
+namespace stitchMeshing {
 // https://stackoverflow.com/questions/2328339/how-to-generate-n-different-colors-for-any-natural-number-n
 int indexcolors[128] = {
 	0xEEEEEE, 0xFFFF00, 0x1CE6FF, 0xFF34FF, 0xFF4A46, 0x008941, 0x006FA6, 0xA30059,
@@ -79,11 +80,9 @@ void MultiResolutionHierarchy::labelMesh(bool pFlip)
 	mDual = new DualGraph(mPoly);
 #endif
 
-	string filename = "gurobi_result.txt";
-
 	std::cout << "------------ UV minimization ------------\n";
-	mDual->gurobiSolver(filename);
-	mDual->loadGurobiResult(filename, pFlip);
+	mDual->labelSolver();
+	mDual->loadLabelResult(pFlip);
 	mDual->findUVMismatch();
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1205,7 +1204,7 @@ void MultiResolutionHierarchy::removeQuadDecInc()
 	mCleanDual->findLoops();
 }
 
-void MultiResolutionHierarchy::exportResult(char * path)
+void MultiResolutionHierarchy::exportResult(const std::string &path)
 {
 	std::fstream exportFile(path, std::ios::out);
 
@@ -1232,4 +1231,37 @@ void MultiResolutionHierarchy::exportResult(char * path)
 		exportFile << std::endl;
 	}
 	exportFile.close();
+}
+
+void MultiResolutionHierarchy::exportResult(std::vector<std::vector<float>> &verts,
+			  		  						std::vector<std::vector<int>> &faces)
+{
+	verts.resize(mCleanPoly->numVertices());
+	for (int vi = 0; vi < mCleanPoly->numVertices(); vi++)
+	{
+		verts[vi] = std::vector<float>(3);
+		verts[vi][0] = mCleanPoly->vertex(vi)->position().x;
+		verts[vi][1] = mCleanPoly->vertex(vi)->position().y;
+		verts[vi][2] = mCleanPoly->vertex(vi)->position().z;
+	}
+
+	faces.resize(mCleanPoly->numFaces());
+	int numFaces = 0;
+	for (int fi = 0; fi < mCleanPoly->numFaces(); fi++)
+	{
+		HE_Face* f = mCleanPoly->face(fi);
+		if (f->hole()) continue;
+
+		faces[numFaces] = std::vector<int>{};
+		HE_Face::const_edge_circulator e = f->begin();
+		HE_Face::const_edge_circulator sentinel = e;
+		do
+		{
+			faces[numFaces].push_back((*e)->dst()->index());
+			++e;
+		} while (e != sentinel);
+		++numFaces;
+	}
+	faces.resize(numFaces);
+}
 }

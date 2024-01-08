@@ -27,6 +27,7 @@
 #include "HE_Polyhedron.h"
 #include "util.h"
 
+namespace stitchMeshing {
 // Duplicates Face* data from 'faces', adding it to 'p'.
 void duplicateFaces(HE_Polyhedron& p, const std::set<const HE_Face*>& faces)
 {
@@ -453,7 +454,7 @@ void HE_Polyhedron::closeSurface()
 	std::map<std::pair<int, int>, HE_HalfEdge*> connections;
 	findUnmatchedHalfEdges(this, connections);
 	if (!connections.empty())
-		::closeSurface(this, connections);
+		stitchMeshing::closeSurface(this, connections);
 }
 
 
@@ -662,4 +663,5 @@ void HE_Polyhedron::setEdgeFlags(std::vector<std::vector<bool>> edgeFlags)
 			++ei;
 		} while (e != sentinel);
 	}
+}
 }

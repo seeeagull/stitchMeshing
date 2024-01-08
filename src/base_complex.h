@@ -6,6 +6,7 @@
 #include<set>
 #include "global_types.h"
 
+namespace stitchMeshing {
 class base_complex
 {
 public:
@@ -22,4 +23,5 @@ public:
 	void assign_color(Frame &frame);
 	~base_complex() {};
 };
+}
 

@@ -22,6 +22,7 @@
 #include <cassert>
 #include "util.h"
 
+namespace stitchMeshing {
 double rangerand(double min, double max, long steps)
 {
 	assert(max > min);
@@ -37,4 +38,5 @@ double gaussianrand(double min, double max, long steps)
 	double value = cos(factor)*sin(factor);
 
 	return center + value*halfinterval;
+}
 }

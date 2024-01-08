@@ -1,7 +1,8 @@
 #pragma once
 #include "common.h"
-typedef float Scalar;
 
+namespace stitchMeshing {
+typedef float Scalar;
 /* 
    xT*A*x + b*x + c
 */
@@ -187,3 +188,4 @@ bool getMinimum(Vector3f &result) const
 		return res;
 	}
 };
+}

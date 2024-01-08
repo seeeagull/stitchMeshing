@@ -23,6 +23,7 @@
 
 #include "cyPoint.h"
 
+namespace stitchMeshing {
 class HE_HalfEdge;
 class HE_Face;
 class HE_Polyhedron;
@@ -126,5 +127,5 @@ protected:
 	HE_HalfEdge* _edge;
 	int _index;
 };
-
+}
 #endif // __VERTEX_H__

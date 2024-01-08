@@ -29,6 +29,7 @@
 #include "HE_Face.h"
 #include "util.h"
 
+namespace stitchMeshing {
 cyPoint3f HE_Vertex::normal() const
 {
 	if (!_edge)
@@ -223,4 +224,4 @@ bool HE_Vertex::check(bool holesFilled) const
 
 	return true;
 }
-
+}

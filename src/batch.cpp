@@ -19,7 +19,12 @@ BSD-style license that can be found in the LICENSE.txt file.
 #include "subdivide.h"
 #include "timer.h"
 
-void batch_process(char *input, char *output, Float scale) {
+namespace stitchMeshing {
+
+void batch_process(const std::string &input, const std::string &output,
+				   Float scale, bool flip,
+				   std::vector<std::vector<int>> &faces,
+                   std::vector<std::vector<float>> &verts) {
 
 	MultiResolutionHierarchy mRes;
 	Optimizer *mOptimizer;
@@ -30,7 +35,10 @@ void batch_process(char *input, char *output, Float scale) {
 
 	Timer<> timer;
 	timer.beginStage("data pre-processing");
-	mRes.load(input);
+	if (input.size() > 0)
+		mRes.load(input);
+	else
+		mRes.load(verts, faces);
 
 	if (scale < 0)
 	{
@@ -100,11 +108,15 @@ void batch_process(char *input, char *output, Float scale) {
 	mRes.sta.timings.push_back(timer.value());
 
 	mRes.convert2Poly();
-	mRes.labelMesh(false);
+	mRes.labelMesh(flip);
 	
 	mRes.alignMesh();
 
 	mRes.stitchMeshing();
 
-	mRes.exportResult(output);
+	if (output.size() > 0)
+		mRes.exportResult(output);
+	else
+		mRes.exportResult(verts, faces);
+}
 }

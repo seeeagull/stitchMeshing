@@ -1,5 +1,6 @@
 #include "orient_triangle_mesh.h"
 
+namespace stitchMeshing {
 float	uctet(vector<float> a, vector<float> b, vector<float> c, vector<float> d)
 {
 	float res = 0;
@@ -313,4 +314,5 @@ void orient_triangle_mesh_index(MatrixXf &Vs, MatrixXu &Ts)
 		Ts(1, i) = nf[i][1];
 		Ts(2, i) = nf[i][2];
 	}
+}
 }

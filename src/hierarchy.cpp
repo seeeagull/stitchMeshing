@@ -8,6 +8,8 @@
 #include "subdivide.h"
 #include "tri_tri_intersection.h"
 
+namespace stitchMeshing {
+
 MultiResolutionHierarchy::MultiResolutionHierarchy() {
 	mV = { MatrixXf::Zero(3, 1) };
 	mN = { MatrixXf::Zero(3, 1) };
@@ -21,8 +23,6 @@ MultiResolutionHierarchy::MultiResolutionHierarchy() {
 }
 
 bool MultiResolutionHierarchy::load(const std::string &filename) {
-	std::lock_guard<ordered_lock> lock(mMutex);
-
 	mV.resize(1);
 	mV[0] = MatrixXf::Zero(3, 1);
 	mF = MatrixXu::Zero(3, 1);
@@ -52,6 +52,54 @@ bool MultiResolutionHierarchy::load(const std::string &filename) {
 
 	return true;
 }
+
+bool MultiResolutionHierarchy::load(const std::vector<std::vector<float>> &verts,
+				   					const std::vector<std::vector<int>> &faces) {
+
+	typedef std::unordered_map<int, int> VertexMap;
+
+	std::vector<int> indices{};
+	std::vector<int> vertices{};
+	VertexMap vertexMap;
+	for (int i = 0; i < faces.size(); ++i) {
+		for (int j = 0; j < 3; ++j) {
+			int v = faces[i][j];
+			VertexMap::const_iterator it = vertexMap.find(v);
+			if (it == vertexMap.end()) {
+				vertexMap[v] = vertices.size();
+				indices.push_back(vertices.size());
+				vertices.push_back(v);
+			} else {
+				indices.push_back(it->second);
+			}
+		}
+	}
+
+	mV.resize(1);
+	mV[0].resize(3, verts.size());
+	for (int i = 0; i < verts.size(); ++i)
+		for (int j = 0; j < 3; ++j)
+		mV[0](j, i) = verts[vertices[i]][j];
+	mF.resize(3, faces.size());
+	for (int i = 0; i < faces.size(); ++i)
+		for (int j = 0; j < 3; ++j)
+		mF(j, i) = indices[i*3+j];
+
+	mAABB = AABB(
+		mV[0].rowwise().minCoeff(),
+		mV[0].rowwise().maxCoeff()
+	);
+
+	//std::cout << mAABB.min[0] << " " << mAABB.min[1] << " " << mAABB.min[1] << std::endl;
+	//std::cout << mAABB.max[0] << " " << mAABB.max[1] << " " << mAABB.max[1] << std::endl;
+
+	ms = compute_mesh_stats(mF, mV[0]);
+	diagonalLen = 3 * (mAABB.max - mAABB.min).norm() / 100;
+	ratio_scale = ms.mAverageEdgeLength * 3.5 / diagonalLen;
+
+	return true;
+}
+
 MeshStats MultiResolutionHierarchy::compute_mesh_stats(const MatrixXu &F_, const MatrixXf &V_, bool deterministic)
 {
 	MeshStats stats;
@@ -592,4 +640,5 @@ void MultiResolutionHierarchy::orient_polygon_mesh(MatrixXf &HV, vector<vector<u
 	if (res > 0) {
 		for (uint32_t i = 0; i < HF.size(); i++) std::reverse(HF[i].begin(), HF[i].end());
 	}
+}
 }

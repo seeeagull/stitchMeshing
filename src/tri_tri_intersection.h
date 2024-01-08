@@ -17,6 +17,8 @@
 */
 
 #include <math.h>
+
+namespace stitchMeshing {
 #define FABS(x) (double(fabs(x)))        /* implement as is fastest on your machine */
 
 /* if USE_EPSILON_TEST is true then we do a check:
@@ -306,4 +308,5 @@ int NoDivTriTriIsect(double V0[3], double V1[3], double V2[3],
 
 	if (isect1[1]<isect2[0] || isect2[1]<isect1[0]) return 0;
 	return 1;
+}
 }

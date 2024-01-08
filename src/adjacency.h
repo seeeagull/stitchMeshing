@@ -4,7 +4,7 @@
 #include <map>
 
 #define INVALID ((uint32_t) -1)
-
+namespace stitchMeshing {
 /**
  * \param C
  *    #F by 3/4 list of triangle/quad indices
@@ -326,4 +326,5 @@ inline void rewind_edge_to_tet_3d(const MatrixXu &TT, const MatrixXu &TTi,
             ETi.col(e) << saved_it.t(), saved_it.f(), saved_it.e();
         }
     }
+}
 }

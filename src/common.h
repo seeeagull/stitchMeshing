@@ -20,6 +20,8 @@
 #include <vector>
 #include <atomic>
 
+namespace stitchMeshing {
+
 /* Application precision -- can be set to single or double precision */
 #if defined(SINGLE_PRECISION)
 typedef float Float;
@@ -238,4 +240,5 @@ inline std::vector<std::string> str_tokenize(const std::string &s, char delim, b
 }
 inline Float signum(Float value) {
 	return std::copysign((Float)1, value);
+}
 }

@@ -2,6 +2,7 @@
 
 #include "quat.h"
 
+namespace stitchMeshing {
 inline int findRotation(const Vector3f &q0, const Vector3f &n0, const Vector3f &_q1, const Vector3f &n1) {
     const Vector3f q1 = rotateVectorIntoPlane(_q1, n1, n0);
     const Vector3f t1 = n0.cross(q1);
@@ -261,4 +262,5 @@ inline Vector3f compat_orientation_intrinsic_2(
 	const Vector3f &q0, const Vector3f &n0, const Vector3f &_q1, const Vector3f &n1) {
 	const Vector3f q1 = rotateVectorIntoPlane(_q1, n1, n0);
 	return q1 * signum(q1.dot(q0));
+}
 }

@@ -25,6 +25,8 @@
 #include "HE_Face.h"
 #include "HE_Vertex.h"
 
+
+namespace stitchMeshing {
 HE_HalfEdge* HE_HalfEdge::prev()
 {
 	HE_HalfEdge* he = _next;
@@ -115,4 +117,5 @@ bool HE_HalfEdge::check(bool holesFilled) const
 	assert(prev()->next() == this);
 
 	return true;
+}
 }

@@ -5,6 +5,7 @@
 #include "timer.h"
 #include <iomanip>
 
+namespace stitchMeshing {
 template <typename ParseHeader, typename ParseLine>
 void loadTextFile(const std::string &filename, ParseHeader parseHeader,
 	ParseLine parseLine) {
@@ -944,4 +945,5 @@ void load_HYBRID_mesh(Mesh &mesh, string path) {
 	}
 
 	fclose(f);
+}
 }

@@ -2,6 +2,7 @@
 #include "common.h"
 #include "global_types.h"
 
+namespace stitchMeshing {
 extern void loadTetMesh(const std::string &prefix, MatrixXf &V, MatrixXu &F, MatrixXu &T);
 extern void loadTriMesh(const std::string &filename, MatrixXf &V, MatrixXu &F);
 extern void load_obj(const std::string &filename, MatrixXu &F, MatrixXf &V);
@@ -34,4 +35,4 @@ extern void write_statistics_TXT(statistics &sta, char * path);
 
 
 extern void load_HYBRID_mesh(Mesh &mesh, string path);
-
+}

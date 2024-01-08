@@ -16,6 +16,7 @@
 #include "common.h"
 #include <pcg32.h>
 
+namespace stitchMeshing {
 struct Ray {
     Vector3f o, d;
     Float mint, maxt;
@@ -131,5 +132,6 @@ struct AABB {
 inline Vector3f aabbRand(const AABB &aabb, pcg32 &rng) {
     return aabb.min + aabb.extents().cwiseProduct(
                Vector3f(rng.nextFloat(), rng.nextFloat(), rng.nextFloat()));
+}
 }
 

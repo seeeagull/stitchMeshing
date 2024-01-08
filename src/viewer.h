@@ -35,6 +35,8 @@ using nanogui::VScrollPanel;
 
 #include <stb_image.h>
 
+
+namespace stitchMeshing {
 class GLTexture {
 public:
 	using handleType = std::unique_ptr<uint8_t[], void(*)(void*)>;
@@ -238,3 +240,4 @@ protected:
 	GLTexture mArrowTexture;
 	GLTexture mUVTexture;
 };
+}

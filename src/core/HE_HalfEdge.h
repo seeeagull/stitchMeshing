@@ -24,6 +24,7 @@
 #include <ostream>
 #include "cyPoint.h"
 
+namespace stitchMeshing {
 #define EFLAG_HORIZONTAL		(1<<16)
 #define EFLAG_VERTICAL			(1<<17)
 
@@ -104,5 +105,5 @@ protected:
 	int				_index;
 	unsigned int	_flags;
 };
-
+}
 #endif // __HALFEDGE_H__

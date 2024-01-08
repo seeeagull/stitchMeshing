@@ -12,6 +12,8 @@
 */
 
 #include "dedge.h"
+
+namespace stitchMeshing {
 static const uint32_t INVALID = -1;
 void build_dedge(const MatrixXu &F, const MatrixXf &V, VectorXu &V2E,
                          VectorXu &E2E, VectorXb &boundary, VectorXb &nonManifold, bool quiet) {
@@ -142,4 +144,5 @@ void build_dedge(const MatrixXu &F, const MatrixXf &V, VectorXu &V2E,
             cout << isolatedCounter << " isolated vertices, ";
         cout << "took " << ")" << endl;
     }
+}
 }

@@ -73,7 +73,9 @@ int main(int argc, char **argv) {
     tbb::task_scheduler_init init(nprocs == -1 ? tbb::task_scheduler_init::automatic : nprocs);
 
 	if (Batch_Process) {
-		batch_process(batchIutput, batchOutput, scale);
+        std::vector<std::vector<int>> faces{};
+        std::vector<std::vector<float>> verts{};
+		batch_process(batchIutput, batchOutput, scale, false, faces, verts);
 		return EXIT_SUCCESS;
 	}
 	

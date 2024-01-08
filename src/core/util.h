@@ -24,6 +24,7 @@
 #include <exception>
 #include <string>
 
+namespace stitchMeshing {
 #define M_PI 3.14159265358979323846264338327950288
 
 class HE_exception : public std::exception
@@ -77,5 +78,5 @@ double gaussianrand(double min, double max, long steps = 10000);
 * @return A value in the interval.
 */
 double rangerand(double min, double max, long steps = 10000);
-
+}
 #endif // __UTIL_H__

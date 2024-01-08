@@ -25,6 +25,8 @@
 #include "HE_HalfEdge.h"
 #include "util.h"
 
+
+namespace stitchMeshing {
 cyPoint3f HE_Face::normal() const
 {
 	//static Vector3Df prev(1,0,0); // $$$ Hack to prevent problems with degenerate normals...
@@ -303,4 +305,5 @@ bool HE_Face::degenerate() const
 		++eit;
 	} while (eit != sentinel);
 	return false;
+}
 }

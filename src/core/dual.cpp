@@ -22,6 +22,8 @@
 #include <scip/scipdefplugins.h>
 #include "dual.h"
 
+
+namespace stitchMeshing {
 DualGraph::DualGraph(HE_Polyhedron* ply) {
     _poly = ply;
     /* Construct the dual graph from ply */
@@ -1152,7 +1154,7 @@ void DualGraph::findFaceGroups()
 	}
 }
 
-void DualGraph::loadGurobiResult(std::string pFilename, bool pFlip)
+void DualGraph::loadLabelResult(bool pFlip)
 {
 	int numVars = 0;
 
@@ -1171,19 +1173,13 @@ void DualGraph::loadGurobiResult(std::string pFilename, bool pFlip)
 		numVars += f->NumHalfEdge();
 	}
 
-	/* load gurobi result */
-	std::string uv_config = pFilename + "_uv_config.txt";
-	std::ifstream uvfile;
-	uvfile.open(uv_config);
-
-	std::vector<bool> gurobiResult;
-	gurobiResult.clear();
+	/* load label result */
+	std::vector<bool> labelResult;
+	labelResult.clear();
 	int fidx = 1;
 	for (int i = 0; i < numVars; i++)
 	{
-		int tmp;
-		uvfile >> tmp;
-		gurobiResult.push_back(bool(tmp == 1));
+		labelResult.push_back(bool(_labelResult[i] == 1));
 
 		if (i == (_idxOffsets[fidx] - 1)) {
 			fidx++;
@@ -1205,27 +1201,23 @@ void DualGraph::loadGurobiResult(std::string pFilename, bool pFlip)
 			HE_HalfEdge* he = _poly->halfedge((*e)->index());
 			if (pFlip)
 			{
-				if (gurobiResult[offset + i])
+				if (labelResult[offset + i])
 					he->SetFlag(EFLAG_HORIZONTAL);
 				else
 					he->SetFlag(EFLAG_VERTICAL);
 			}
 			else 
 			{
-				if (!gurobiResult[offset + i])
+				if (!labelResult[offset + i])
 					he->SetFlag(EFLAG_HORIZONTAL);
 				else
 					he->SetFlag(EFLAG_VERTICAL);
 			}
 		}
 	}
-
-	_gurobiResultPool.push_back(gurobiResult);
-
-	uvfile.close();
 }
 
-void DualGraph::gurobiSolverHori()
+void DualGraph::labelSolverHori()
 {
 #ifdef USE_GUROBI
 	try {
@@ -1413,7 +1405,7 @@ void DualGraph::gurobiSolverHori()
 #endif
 }
 
-void DualGraph::gurobiSolver(std::string pFilename)
+void DualGraph::labelSolver()
 {
 #ifdef USE_GUROBI
 	try {
@@ -1515,34 +1507,27 @@ void DualGraph::gurobiSolver(std::string pFilename)
 			std::cout << "Number of solutions found: " << _nSolutions << std::endl;
 
 			_nSolutions = 1;
+			_labelResult.resize(numVars);
 
 			for (int e = 0; e < _nSolutions; e++) {
-
-				std::ofstream uvfile;
-				std::string uv_config = pFilename + "_uv_config.txt";
-				uvfile.open(uv_config);
 				
 				model.set(GRB_IntParam_SolutionNumber, e);
 
-				std::vector<bool> gurobiResult;
-				gurobiResult.clear();
+				std::vector<bool> labelResult;
+				labelResult.clear();
 				int fidx = 1;
 				for (int i = 0; i < numVars; i++)
 				{
-					gurobiResult.push_back(grbVars[i].get(GRB_DoubleAttr_X) > 0.5f);
+					labelResult.push_back(grbVars[i].get(GRB_DoubleAttr_X) > 0.5f);
 
 					if (grbVars[i].get(GRB_DoubleAttr_X) > 0.5f)
-						uvfile << int(1) << " ";
+						_labelResult[i] = 1;
 					else 
-						uvfile << int(0) << " ";
+						_labelResult[i] = 0;
 
 					if (i == (_idxOffsets[fidx] - 1)) 
 						fidx++;
 				}
-
-				uvfile.close();
-
-				_gurobiResultPool.push_back(gurobiResult);
 			}
 		}
 		else
@@ -1560,7 +1545,7 @@ void DualGraph::gurobiSolver(std::string pFilename)
 		std::cout << "Exception during optimization" << std::endl;
 	}
 #else
-	std::cout << "~~~~~no Gorubi, using SCIP~~~~~" << std::endl;
+	std::cout << "~~~~~no Gurobi, using SCIP~~~~~" << std::endl;
 	SCIP* scip = nullptr;
 	SCIPcreate(&scip);
 	SCIPincludeDefaultPlugins(scip);
@@ -1624,7 +1609,7 @@ void DualGraph::gurobiSolver(std::string pFilename)
 			// fi0 = fi2
 			// fi1 = fi3
 			// fi0 + fi1 = 1
-			SCIP_CONS* cons[2];
+			SCIP_CONS* cons[3];
 			cons[0] = nullptr;
 			namebuf.str("c");
 			namebuf << std::to_string(fi) << '0';
@@ -1712,27 +1697,18 @@ void DualGraph::gurobiSolver(std::string pFilename)
 		sol = SCIPgetBestSol( scip );
 		auto qmval = SCIPgetSolVal(scip, sol, vars[numVars]);
 		std::cout << "qmatrix min: " << qmval << std::endl;
-		std::ofstream uvfile;
-		std::string uv_config = pFilename + "_uv_config.txt";
-		uvfile.open(uv_config);
 		int fidx = 1;
-		std::vector<bool> result{};
+		_labelResult.resize(numVars);
 		for (int i = 0; i < numVars; i++)
-		{	
-			auto val = SCIPgetSolVal(scip, sol, vars[i]);
-			result.push_back(val > 0.5f);
-
-			if (val > 0.5f)
-				uvfile << int(1) << " ";
+		{
+			if (SCIPgetSolVal(scip, sol, vars[i]) > 0.5f)
+				_labelResult[i] = 1;
 			else 
-				uvfile << int(0) << " ";
+				_labelResult[i] = 0;
 
 			if (i == (_idxOffsets[fidx] - 1)) 
 				fidx++;
 		}
-
-		uvfile.close();
-		_gurobiResultPool.push_back(result);
 	} else if( solutionstatus == SCIP_STATUS_INFEASIBLE ) {
 		std::cout << "Problem is infeasible." << std::endl;
 	} else {
@@ -2556,7 +2532,7 @@ void DualGraph::waleMismatchSolver()
 		std::cout << "Exception during optimization" << std::endl;
 	}
 #else
-	std::cout << "~~~~~no Gorubi, using SCIP~~~~~" << std::endl;
+	std::cout << "~~~~~no Gurobi, using SCIP~~~~~" << std::endl;
 	
 	SCIP* scip = nullptr;
 	SCIPcreate(&scip);
@@ -3240,4 +3216,5 @@ void DualGraph::fixTriangleUV(int fi, int i)
 			ee++;
 		}
 	}
+}
 }

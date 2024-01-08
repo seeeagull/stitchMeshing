@@ -2,6 +2,7 @@
 
 #include "orientations.h"
 
+namespace stitchMeshing {
 inline Vector3f middle_point(const Vector3f &p0, const Vector3f &n0, const Vector3f &p1, const Vector3f &n1) {
     Float n0p0 = n0.dot(p0), n0p1 = n0.dot(p1),
           n1p0 = n1.dot(p0), n1p1 = n1.dot(p1),
@@ -318,3 +319,4 @@ template <typename T>
 T barycentric(const T& v1, const T& v2, const T& v3, const Vector2d& uv);
 template <typename T>
 bool num_equal(const T& x, const T& y, const double &precision);
+}

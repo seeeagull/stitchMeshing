@@ -20,6 +20,8 @@
 
 using nanogui::Serializer;
 using namespace std;
+
+namespace stitchMeshing {
 class BVH;
 
 struct MeshStats {
@@ -40,6 +42,8 @@ public:
     MultiResolutionHierarchy();
 
     bool load(const std::string &filename);
+	bool load(const std::vector<std::vector<float>> &verts,
+			  const std::vector<std::vector<int>> &faces);
 	MeshStats compute_mesh_stats(const MatrixXu &F_, const MatrixXf &V_, bool deterministic = false);
 
 	//protected:
@@ -166,7 +170,9 @@ public:
 	void convertAlignMesh2Rend();
 	void convertStitchMesh2Rend();
 	void removeQuadDecInc();
-	void exportResult(char * path);
+	void exportResult(const std::string &path);
+	void exportResult(std::vector<std::vector<float>> &verts,
+			  		  std::vector<std::vector<int>> &faces);
 
 public:
 	//for both 2D & 3D 
@@ -276,3 +282,4 @@ public:
 	HE_Polyhedron* mCleanPoly;
 	DualGraph* mCleanDual;
 };
+}

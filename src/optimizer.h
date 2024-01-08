@@ -2,6 +2,7 @@
 #include "hierarchy.h"
 #include <thread>
 
+namespace stitchMeshing {
 class Optimizer {
 public:
     Optimizer(MultiResolutionHierarchy &mRes);
@@ -47,3 +48,4 @@ public:
     uint32_t mLevelIterations;
     uint32_t mMaxIterations;
 };
+}

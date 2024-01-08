@@ -14,6 +14,7 @@
 #include "bvh.h"
 #include "timer.h"
 
+namespace stitchMeshing {
 struct Bins {
     static const int BIN_COUNT = 8;
     Bins() { memset(counts, 0, sizeof(uint32_t) * BIN_COUNT); }
@@ -759,4 +760,5 @@ std::pair<Float, uint32_t> BVH::statistics(uint32_t node_idx) const {
 
 BVH::~BVH() {
     delete[] mIndices;
+}
 }
